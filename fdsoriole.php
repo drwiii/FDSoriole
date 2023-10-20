@@ -1,7 +1,7 @@
 #!/usr/bin/php -q
 <?php
 //
-// HVC FDS Oriole, revision 10
+// HVC FDS Oriole, revision 11
 // Douglas Winslow <winslowdoug@gmail.com>
 // This software reads the FDS disk format for data recovery and repair.
 //
@@ -41,6 +41,10 @@
 //  Redo directory printout.
 //  Change output file naming.
 //  Add option parsing to command line.
+// Revision 11: 20-Oct-2023 08:17
+//  Change catalog selection routine due to an interpreter update.
+//  Accommodate more different filenames.
+//  Accommodate out-of-range timestamps.
 //
 // TO DO:
 //  Disk writing input/output functions
@@ -241,14 +245,14 @@ foreach ($filemap as $offset)	// for each starting offset found in the file map.
 	$y1 = $DF[$r++];
 	$m1 = $DF[$r++];
 	$d1 = $DF[$r++];
-	print dechex(ord($m1))."/".dechex(ord($d1))."/".(25+dechex(ord($y1)))." ";	// completed
+	print dechex(ord($m1))."/".dechex(ord($d1))."/".(25+(int)dechex(ord($y1)))." ";		// completed
 
 	$r += 10;
 
 	$y2 = $DF[$r++];
 	$m2 = $DF[$r++];
 	$d2 = $DF[$r++];
-	print dechex(ord($m2))."/".dechex(ord($d2))."/".(25+dechex(ord($y2)))."  ";	// created
+	print dechex(ord($m2))."/".dechex(ord($d2))."/".(25+(int)dechex(ord($y2)))."  ";	// created
 
 	$r += 9;
 
@@ -286,7 +290,8 @@ foreach ($filemap as $offset)	// for each starting offset found in the file map.
 					if (strlen($filename) >= 8) break;
 				}
 				$filename = trim($filename);
-				print "\"".$filename."\"\t";			// filename
+				print "\"".$filename."\"";			// filename
+				print str_repeat(" ", 8-strlen($filename))."\t";
 
 				$loadaddr2 = $DF[$r++];
 				$loadaddr1 = $DF[$r++];
@@ -318,9 +323,8 @@ foreach ($filemap as $offset)	// for each starting offset found in the file map.
 					if (isset($_showdata)) check($data, 0, strlen($data));
 					$r += $filesize;
 					$used += $filesize;
-
 					if ( TRUE != FALSE
-						and $filenum1 == 0
+						and ord($filenum1) == 0
 						and strlen($data) == 224
 						and crc32($data) == 798990613
 						and $data[0] == "$" )
@@ -345,7 +349,7 @@ foreach ($filemap as $offset)	// for each starting offset found in the file map.
 				print "\n";
 			}
 			else
-				break;	
+				break;
 		}
 
 		if ($filecount != $countfiles) print "\n** File count wrong. Check file system. **\n";
